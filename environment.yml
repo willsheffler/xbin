@@ -1,0 +1,24 @@
+name: xbin
+dependencies:
+ - python >= 3.5
+ - numpy
+ - pytest
+ - pytest-runner
+ - pytest-cov
+ - sphinx_rtd_theme
+ - ipython
+ - pyyaml
+ - cryptography
+ - traitlets
+ - pip:
+   - hypothesis
+   - pytest-sugar
+   - pytest-xdist
+   - bumpversion
+   - tox
+   - wheel
+   - watchdog
+   - flake8
+   - coverage
+   - sphinx
+   - homog >= 0.1.11
