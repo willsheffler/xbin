@@ -1,4 +1,6 @@
 name: xbin
+channels:
+ - conda-forge
 dependencies:
  - python >= 3.5
  - numpy
@@ -10,7 +12,9 @@ dependencies:
  - pyyaml
  - cryptography
  - traitlets
- - pip:
+ - traittypes
+ - matplotlib
+- pip:
    - hypothesis
    - pytest-sugar
    - pytest-xdist
@@ -22,3 +26,4 @@ dependencies:
    - coverage
    - sphinx
    - homog >= 0.1.11
+   - bcc >= 0.1.8

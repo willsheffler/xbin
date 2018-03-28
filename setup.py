@@ -14,6 +14,7 @@ with open('HISTORY.rst') as history_file:
 requirements = [
     'numpy',
     'homog',
+    'bcc',
 ]
 
 setup_requirements = ['pytest-runner', ]
@@ -22,6 +23,7 @@ test_requirements = [
     'pytest',
     'numpy',
     'homog',
+    'bcc',
 ]
 
 setup(
