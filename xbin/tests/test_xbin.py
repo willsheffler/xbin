@@ -7,8 +7,8 @@ import hypothesis.strategies as hs
 import hypothesis.extra.numpy as hn
 
 
-print(('!' * 80 + '\n') * 10, end='')
-MAX_EXAMPLES = 1
+# print(('!' * 80 + '\n') * 10, end='')
+MAX_EXAMPLES = 100
 
 
 def test_get_half_bt24cell_face_basic():
@@ -44,7 +44,7 @@ def test_half_bt24cell_geom():
     assert np.allclose(cellcenang, cellquatang)
     # np.fill_diagonal(cellcenang, 10)
 
-    q = homog.quat.rand_quat(1000)
+    q = homog.quat.rand_quat((1000,))
     qang = 2 * np.arccos(np.clip(np.abs(
         np.sum(q * half_bt24cell_faces[:, None], -1)), -1, 1))
     minqang = np.min(qang, 0)
@@ -184,8 +184,14 @@ def test_f6_to_xform_invertibility():
     assert np.allclose(xhat, xforms)
 
 
+def test_too_many_bins():
+    XformBinner(0.1, 3)
+    with pytest.raises(ValueError): XformBinner(0.01, 3)
+    with pytest.raises(ValueError): XformBinner(0.01, 10)
+
+
 def test_XformBinner_covrad():
-    niter = 10
+    niter = 30
     nsamp = 10000
     for i in range(niter):
         cart_resl = np.random.rand() * 10 + 0.1
@@ -194,19 +200,17 @@ def test_XformBinner_covrad():
         xb = XformBinner(cart_resl, ori_resl)
         idx = xb.get_bin_index(xforms)
         cen, f6 = xb.get_bin_center(idx, debug=True)
-
         cart_dist = np.linalg.norm(
             xforms[..., :3, 3] - cen[..., :3, 3], axis=-1)
-        if not np.all(cart_dist < cart_resl):
-            print('ori_resl', ori_resl, 'nside:', xb.ori_nside,
-                  'max(cart_dist):', np.max(cart_dist), cart_resl)
-        assert np.all(cart_dist < cart_resl)
-
         ori_dist = homog.angle_of(homog.hinv(cen) @ xforms)
-        if not np.all(cart_dist < cart_resl):
-            print('ori_resl', ori_resl, 'nside:', xb.ori_nside,
-                  'max(ori_dist):', np.max(ori_dist))
-        assert np.all(ori_dist < ori_resl / 180 * np.pi)
+        # if not np.all(cart_dist < cart_resl):
+        # print('ori_resl', ori_resl, 'nside:', xb.ori_nside,
+        # 'max(cart_dist):', np.max(cart_dist), cart_resl)
+        # if not np.all(cart_dist < cart_resl):
+        # print('ori_resl', ori_resl, 'nside:', xb.ori_nside,
+        # 'max(ori_dist):', np.max(ori_dist))
+        assert np.sum(cart_dist < cart_resl) > nsamp * 0.99
+        assert np.sum(ori_dist < ori_resl / 180 * np.pi) > nsamp * 0.99
 
 
 def test_xbinner_bcc6_alignment():

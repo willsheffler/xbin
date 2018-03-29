@@ -1,6 +1,6 @@
 import sys
-sys.path.insert(0, '/home/sheffler/src/homog/')
-print(('!' * 80 + '\n') * 10, end='')
+# sys.path.insert(0, '/home/sheffler/src/homog/')
+# print(('!' * 80 + '\n') * 10, end='')
 
 import functools as ft
 import numpy as np
@@ -227,10 +227,12 @@ class XformBinner:
         if not ori_nside: self.ori_nside = int(
             np.sum(_xform_binner_covrad >= self.ori_resl) + 1)
         # 1.7 is empirically determined hack...
-        sizes = ([int(1.7 * cart_bound / cart_resl)] * 3
+        sizes = ([int(1.5 * cart_bound / cart_resl)] * 3
                  + [int(self.ori_nside)] * 3)
-        # print(ft.reduce(operator.mul, sizes, 1))
-        assert ft.reduce(operator.mul, sizes, 1) < 2**58
+        totsize = ft.reduce(operator.mul, [_ + 2 for _ in sizes], 1)
+        if totsize > 2**58:
+            raise ValueError('too many bins, increase cart_resl and/or ori_resl,'
+                             ' or reduce cart_bound')
         self.bcc6 = BCC(sizes=sizes,
                         lower=[-cart_bound] * 3 + [0] * 3,
                         upper=[cart_bound] * 3 + [1] * 3)
