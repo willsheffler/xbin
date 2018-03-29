@@ -4,7 +4,7 @@
 
 __author__ = """Will Sheffler"""
 __email__ = 'willsheffler@gmail.com'
-__version__ = '__version__ = '0.1.3''
+__version__ = '__version__ = '0.1.4''
 
 
 from .xbin import *
