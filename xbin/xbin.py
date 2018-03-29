@@ -2,11 +2,11 @@ import sys
 sys.path.insert(0, '/home/sheffler/src/homog/')
 print(('!' * 80 + '\n') * 10, end='')
 
-
+import functools as ft
 import numpy as np
 from bcc import BCC
 import homog as hg
-
+import operator
 
 bt24cell_width = 2 * (np.sqrt(2) - 1)
 bt24cell_width_diagonal = 0.696923425058676
@@ -144,16 +144,39 @@ def to_face_0(quat):
     return face, hg.quat.quat_to_upper_half(q0)
 
 _xform_binner_covrad = np.array([
-    49.66580, 25.99805, 17.48845, 13.15078, 10.48384, 8.76800, 7.48210,
-    6.56491, 5.84498, 5.27430, 4.78793, 4.35932, 4.04326, 3.76735,
-    3.51456, 3.29493, 3.09656, 2.92407, 2.75865, 2.62890, 2.51173,
-    2.39665, 2.28840, 2.19235, 2.09949, 2.01564, 1.94154, 1.87351,
-    1.80926, 1.75516, 1.69866, 1.64672, 1.59025, 1.54589, 1.50077,
-    1.46216, 1.41758, 1.38146, 1.35363, 1.31630, 1.28212, 1.24864,
-    1.21919, 1.20169, 1.17003, 1.14951, 1.11853, 1.09436, 1.07381,
-    1.05223, 1.02896, 1.00747, 0.99457, 0.97719, 0.95703, 0.93588,
-    0.92061, 0.90475, 0.89253, 0.87480, 0.86141, 0.84846, 0.83677,
-    0.82164]) * 1.0
+    68.907736,
+    38.232608,
+    25.860598,
+    19.391913,
+    15.461347,
+    13.152186,
+    11.309651,
+    9.849257,
+    8.653823,
+    7.778357,
+    7.044655,
+    6.504872,
+    5.971447,
+    5.631019,
+    5.240999,
+    4.830578,
+    4.609091,
+    4.373091,
+    4.113840,
+    3.855201,
+    3.726551,
+    3.529638,
+    3.377918,
+    3.262408,
+    3.171638,
+    2.978760,
+    2.879508,
+    2.851197,
+    2.672736,
+    2.628641,
+    2.515808,
+    2.448288,
+])
 
 
 def _f6_to_quat(f6):
@@ -201,11 +224,14 @@ class XformBinner:
         self.ori_resl = ori_resl
         self.cart_bound = cart_bound
         self.ori_nside = ori_nside
-        if not ori_nside:
-            self.ori_nside = int(
-                np.sum(_xform_binner_covrad >= self.ori_resl) + 1)
-        # 1.67 is empirically determined...
-        self.bcc6 = BCC(sizes=[1.7 * cart_bound / cart_resl] * 3 + [self.ori_nside] * 3,
+        if not ori_nside: self.ori_nside = int(
+            np.sum(_xform_binner_covrad >= self.ori_resl) + 1)
+        # 1.7 is empirically determined hack...
+        sizes = ([int(1.7 * cart_bound / cart_resl)] * 3
+                 + [int(self.ori_nside)] * 3)
+        # print(ft.reduce(operator.mul, sizes, 1))
+        assert ft.reduce(operator.mul, sizes, 1) < 2**58
+        self.bcc6 = BCC(sizes=sizes,
                         lower=[-cart_bound] * 3 + [0] * 3,
                         upper=[cart_bound] * 3 + [1] * 3)
 
@@ -219,8 +245,9 @@ class XformBinner:
 
     def get_bin_center(self, index, debug=False):
         face = np.right_shift(index, 58)
-        # print('get_bin_center face', face)
-        assert np.all((0 <= face) * (face < 24))
+        if not np.all((0 <= face) * (face < 24)):
+            print('get_bin_center face', face[(0 > face) + (face > 24)])
+            assert np.all((0 <= face) * (face < 24))
         bcc_key = np.right_shift(np.left_shift(index, 6), 6)
         assert np.all(np.right_shift(bcc_key, 58) == 0)
         f6 = self.bcc6.get_bin_center(bcc_key)

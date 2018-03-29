@@ -184,78 +184,29 @@ def test_f6_to_xform_invertibility():
     assert np.allclose(xhat, xforms)
 
 
-@pytest.mark.skip()
-def test_XformBinner_estimate_covrad():
-    print()
-    for ori_nside in range(1, 21):
-        # cart_resl = np.random.rand() * 10 + 0.0001
-        # ori_resl = np.random.rand() * 50 + 1
-        xforms = homog.rand_xform(1000000)
-        xb = XformBinner(ori_nside=ori_nside)
-        idx = xb.get_bin_index(xforms)
-        cen, f6 = xb.get_bin_center(idx, debug=True)
-        cart_dist = np.linalg.norm(
-            xforms[..., :3, 3] - cen[..., :3, 3], axis=-1)
-        # if not np.all(cart_dist < cart_resl):
-        # print('max(cart_dist):', np.max(cart_dist), cart_resl)
-        # assert np.all(cart_dist < cart_resl)
-        ori_dist = homog.angle_of(homog.hinv(cen) @ xforms)
-
-        print('COV_RAD:', ori_nside,
-              np.percentile(ori_dist, [95, 99, 99.9, 100]) * 180 / np.pi)
-
-        # print(np.sort(ori_dist)[-10:] * 180 / np.pi)
-        # print('xb.ori_nside', xb.ori_nside)
-        # print('max ori_dist degrees:',
-        # np.max(ori_dist * 180 / np.pi), ori_resl)
-        # assert np.all(ori_dist < ori_resl / 180 * np.pi)
-
-    assert 0
-
-
-@pytest.mark.xfail()
 def test_XformBinner_covrad():
-    for i in range(10):
-        cart_resl = np.random.rand() * 10 + 0.0001
-        ori_resl = np.random.rand() * 50 + 1
-        xforms = homog.rand_xform(100000)
+    niter = 10
+    nsamp = 10000
+    for i in range(niter):
+        cart_resl = np.random.rand() * 10 + 0.1
+        ori_resl = np.random.rand() * 50 + 2.5
+        xforms = homog.rand_xform(nsamp)
         xb = XformBinner(cart_resl, ori_resl)
         idx = xb.get_bin_index(xforms)
         cen, f6 = xb.get_bin_center(idx, debug=True)
+
         cart_dist = np.linalg.norm(
             xforms[..., :3, 3] - cen[..., :3, 3], axis=-1)
         if not np.all(cart_dist < cart_resl):
-            print('max(cart_dist):', np.max(cart_dist), cart_resl)
+            print('ori_resl', ori_resl, 'nside:', xb.ori_nside,
+                  'max(cart_dist):', np.max(cart_dist), cart_resl)
         assert np.all(cart_dist < cart_resl)
+
         ori_dist = homog.angle_of(homog.hinv(cen) @ xforms)
-
-        print('ptile ori_dist:', np.percentile(
-            ori_dist, [25, 50, 90, 95, 99, 99.9, 99.99, 99.999,
-                       99.9999, 100]) * 180 / np.pi)
-        print(np.sort(ori_dist)[-10:] * 180 / np.pi)
-        print('xb.ori_nside', xb.ori_nside)
-        print('max ori_dist degrees:',
-              np.max(ori_dist * 180 / np.pi), ori_resl)
+        if not np.all(cart_dist < cart_resl):
+            print('ori_resl', ori_resl, 'nside:', xb.ori_nside,
+                  'max(ori_dist):', np.max(ori_dist))
         assert np.all(ori_dist < ori_resl / 180 * np.pi)
-
-        # print('cen.shape', cen.shape)
-        # cen_uniq = np.unique(cen, axis=0)
-        # idx_uniq = xb.get_bin_index(cen_uniq)
-        # _, cen_uniq_idx_f6 = xb.get_bin_center(idx_uniq, debug=True)
-        # print(cen_uniq.shape)
-        # cen_uniq_quat = homog.quat.xform_to_quat(cen_uniq)
-        # print(cen_uniq_quat)
-        # print(half_bt24cell_faces)
-        # print(cen_uniq_idx_f6)
-
-        # assert 0
-
-        # import matplotlib.pyplot as plt
-        # import time
-        # import pandas as pd
-        # pd.Series(ori_dist * 180 / np.pi).hist(bins=30)
-        # pd.Series(cellcenang.flatten() * 180 / np.pi).hist(bins=30)
-        # plt.show()
 
 
 def test_xbinner_bcc6_alignment():

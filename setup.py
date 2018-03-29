@@ -21,6 +21,7 @@ setup_requirements = ['pytest-runner', ]
 
 test_requirements = [
     'pytest',
+    'hypothesis',
     'numpy',
     'homog',
     'bcc',
