@@ -2,7 +2,7 @@
 History
 =======
 
-0.1.4 (2018-03-28)
+0.1.5 (2018-03-28)
 ------------------
 
 * maybe working, covrad seems reasonable-ish
