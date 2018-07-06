@@ -6,6 +6,12 @@ from hypothesis import given, settings
 import hypothesis.strategies as hs
 import hypothesis.extra.numpy as hn
 
+try:
+    import numba
+    only_if_numba = lambda f: f
+except ImportError:
+    import pytest
+    only_if_numba = pytest.mark.skip
 
 # print(('!' * 80 + '\n') * 10, end='')
 MAX_EXAMPLES = 100
@@ -13,8 +19,9 @@ MAX_EXAMPLES = 100
 
 def test_get_half_bt24cell_face_basic():
     assert half_bt24cell_faces.shape == (24, 4)
-    assert np.all(homog.quat.quat_to_upper_half(half_bt24cell_faces)
-                  == half_bt24cell_faces)
+    assert np.all(
+        homog.quat.quat_to_upper_half(half_bt24cell_faces) ==
+        half_bt24cell_faces)
     assert np.min(np.linalg.norm(half_bt24cell_faces, axis=-1)) == 1
     assert np.max(np.linalg.norm(half_bt24cell_faces, axis=-1)) == 1
     assert half_bt24cell_face([0, 0, 0, 1]) == 3
@@ -30,10 +37,21 @@ def test_get_half_bt24cell_face_basic():
     assert np.all(x <= 23)
 
 
+@only_if_numba
+def test_numba_half_bt24cell_face():
+    assert numba_half_bt24cell_face(np.array([0, 0, 0, 1], dtype='f8')) == 3
+    assert numba_half_bt24cell_face(np.array([1, -1, 1, 1], dtype='f8')) == 8
+    assert numba_half_bt24cell_face(np.array([0.5, 0.5, 0, 0],
+                                             dtype='f8')) == 12
+    assert numba_half_bt24cell_face(np.array([-0.5, 0, 0, 0.5],
+                                             dtype='f8')) == 17
+
+
 def test_half_bt24cell_geom():
-    cellquatang = 2 * np.arccos(np.clip(
-        np.sum(half_bt24cell_faces * half_bt24cell_faces[:, None], -1),
-        -1, 1))
+    cellquatang = 2 * np.arccos(
+        np.clip(
+            np.sum(half_bt24cell_faces * half_bt24cell_faces[:, None], -1), -1,
+            1))
     cellquatang = np.minimum(cellquatang, 2 * np.pi - cellquatang)
     cellcen = homog.quat.quat_to_xform(half_bt24cell_faces)
     cellcenang = homog.angle_of(homog.hinv(cellcen) @ cellcen[:, None])
@@ -44,9 +62,9 @@ def test_half_bt24cell_geom():
     assert np.allclose(cellcenang, cellquatang)
     # np.fill_diagonal(cellcenang, 10)
 
-    q = homog.quat.rand_quat((1000,))
-    qang = 2 * np.arccos(np.clip(np.abs(
-        np.sum(q * half_bt24cell_faces[:, None], -1)), -1, 1))
+    q = homog.quat.rand_quat((1000, ))
+    qang = 2 * np.arccos(
+        np.clip(np.abs(np.sum(q * half_bt24cell_faces[:, None], -1)), -1, 1))
     minqang = np.min(qang, 0)
     # print('Qang to closest',
     #        np.percentile(minqang * 180 / np.pi, np.arange(0, 101, 10)))
@@ -92,32 +110,58 @@ def test_xform_to_f6():
     assert np.all(face == np.arange(24))
 
 
+@only_if_numba
+def test_numba_to_face_0():
+    for i in range(1000):
+        q = homog.quat.rand_quat()
+
+
+@only_if_numba
+def test_numba_xform_to_f6():
+    for i in range(1000):
+        x = homog.rand_xform(1)
+        face_0, f6_0 = xform_to_f6(x)
+        face_1, f6_1 = numba_xform_to_f6(x[0])
+        assert face_0 == face_1
+        if not np.allclose(f6_0, f6_1):
+            print(i, face_0, face_1)
+            print(f6_0)
+            print(f6_1)
+            print(hg.quat.rot_to_quat(x))
+            print(hg.quat.numba_rot_to_quat(x[0]))
+            assert 0
+
+
 @hs.composite
 def Quaternions(draw, shape=()):
     N = int(np.prod(shape))
     quat = draw(hn.arrays(np.float, (0, 4), elements=hs.floats(-1, 1)))
     while quat.shape[0] < N:
-        qbox = draw(hn.arrays(dtype=np.float,
-                              shape=(2 * (N - quat.shape[0]), 4),
-                              elements=hs.floats(-1, 1)))
+        qbox = draw(
+            hn.arrays(
+                dtype=np.float,
+                shape=(2 * (N - quat.shape[0]), 4),
+                elements=hs.floats(-1, 1)))
         norm = np.linalg.norm(qbox, axis=-1)
         qbox[norm == 0] = [1, 0, 0, 0]
         norm[norm == 0] = 1
         ok = (0.01 < norm) * (norm <= 1.0)
         qboxok = qbox[ok] / norm[ok, np.newaxis]
         quat = np.concatenate([quat, qboxok])
-    return quat[:N].reshape(shape + (4,))
+    return quat[:N].reshape(shape + (4, ))
 
 
 @hs.composite
 def Xforms(draw, shape=()):
     quat = draw(Quaternions(shape))
     x = homog.quat.quat_to_xform(quat)
-    trns = draw(hn.arrays(np.float, shape + (3,), elements=hs.floats(-10, 10)))
+    trns = draw(
+        hn.arrays(np.float, shape + (3, ), elements=hs.floats(-10, 10)))
     x[..., :3, 3] = trns
     return x
 
 
+@pytest.mark.skip
 @given(hn.arrays(np.float, (1000, 6), elements=hs.floats(0, 1)))
 @settings(max_examples=MAX_EXAMPLES)
 def test_hypothesis_f6_to_xform_invertibility_face0(f6):
@@ -131,7 +175,7 @@ def test_hypothesis_f6_to_xform_invertibility_face0(f6):
     assert np.allclose(f6[face == 0], f6b[face == 0])
 
 
-@given(Xforms(shape=(100,)))
+@given(Xforms(shape=(100, )))
 @settings(max_examples=MAX_EXAMPLES)
 def test_hypothesis_f6_to_xform_invertibility(xforms):
     face, f6 = xform_to_f6(xforms)
@@ -144,14 +188,13 @@ def test_hypothesis_f6_to_xform_invertibility(xforms):
 
 def test_f6_to_quat():
 
-    assert np.allclose(xbin._f6_to_quat(np.array(
-        [0, 0, 0, 0.0, 0.0, 0.0])),
+    assert np.allclose(
+        xbin._f6_to_quat(np.array([0, 0, 0, 0.0, 0.0, 0.0])),
         [0.81251992, -0.33655677, -0.33655677, -0.33655677])
-    assert np.allclose(xbin._f6_to_quat(np.array(
-        [0, 0, 0, 0.5, 0.5, 0.5])),
-        [1, 0, 0, 0])
-    assert np.allclose(xbin._f6_to_quat(np.array(
-        [0, 0, 0, 1.0, 1.0, 1.0])),
+    assert np.allclose(
+        xbin._f6_to_quat(np.array([0, 0, 0, 0.5, 0.5, 0.5])), [1, 0, 0, 0])
+    assert np.allclose(
+        xbin._f6_to_quat(np.array([0, 0, 0, 1.0, 1.0, 1.0])),
         [0.81251992, 0.33655677, 0.33655677, 0.33655677])
 
 
@@ -173,7 +216,7 @@ def test_f6_to_xform_invertibility_face0():
 
 def test_f6_to_xform_invertibility():
     nexamples = 100000
-    xforms = homog.rand_xform((nexamples,))
+    xforms = homog.rand_xform((nexamples, ))
     face, f6 = xform_to_f6(xforms)
     assert np.all(np.min(f6[..., 3:], axis=0) < 0.1)
     assert np.all(np.max(f6[..., 3:], axis=0) > 0.9)
@@ -186,8 +229,10 @@ def test_f6_to_xform_invertibility():
 
 def test_too_many_bins():
     XformBinner(0.1, 3)
-    with pytest.raises(ValueError): XformBinner(0.01, 3)
-    with pytest.raises(ValueError): XformBinner(0.01, 10)
+    with pytest.raises(ValueError):
+        XformBinner(0.01, 3)
+    with pytest.raises(ValueError):
+        XformBinner(0.01, 10)
 
 
 def test_XformBinner_covrad():
@@ -226,3 +271,22 @@ def test_xbinner_bcc6_alignment():
     # print(bcc6_cen[inbounds])
     # print('nside', xb.bcc6.nside)
     assert np.all(np.abs(inbounds[0]) == 0)
+
+
+@only_if_numba
+def test_numba_xbin():
+    cart_resl = 1.0
+    ori_resl = 10.0
+    xbinner = XformBinner(cart_resl, ori_resl)
+    xbin_indexer = numba_xbin_indexer(cart_resl, ori_resl)
+
+    for i in range(100):
+        x = homog.rand_xform(1)
+        assert xbinner.get_bin_index(x) == xbin_indexer(x[0])
+
+    xbin_indexer = gu_xbin_indexer(cart_resl, ori_resl)
+
+    x = homog.rand_xform(10000)
+    idx0 = xbinner.get_bin_index(x)
+    idx1 = xbin_indexer(x)
+    assert np.all(idx0 == idx1)
