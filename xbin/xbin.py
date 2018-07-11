@@ -4,42 +4,48 @@ import sys
 
 import functools as ft
 import numpy as np
-from bcc import BCC, numba_bcc_indexer
+from bcc import BCC
+try:
+    from bcc import numba_bcc_indexer
+    HAVE_NUMBA = True
+except ImportError:
+    HAVE_NUMBA = False
 import homog as hg
 from homog.util import jit, guvec, float64, int64
 import operator
 
+if HAVE_NUMBA:
 
-def gu_xbin_indexer(*args, **kw):
-    func = _kernel_xbin_indexer(*args, **kw)
-    return guvec([(float64[:, :], int64[:])], '(n,n)->()', func)
+    def gu_xbin_indexer(*args, **kw):
+        func = _kernel_xbin_indexer(*args, **kw)
+        return guvec([(float64[:, :], int64[:])], '(n,n)->()', func)
 
+    def numba_xbin_indexer(*args, **kw):
+        func0 = _kernel_xbin_indexer(*args, **kw)
 
-def numba_xbin_indexer(*args, **kw):
-    func0 = _kernel_xbin_indexer(*args, **kw)
+        @jit
+        def func(value):
+            res = np.empty(1, dtype=np.int64)
+            func0(value, res)
+            return res[0]
 
-    @jit
-    def func(value):
-        res = np.empty(1, dtype=np.int64)
-        func0(value, res)
-        return res[0]
+        return func
 
-    return func
+    def _kernel_xbin_indexer(cart_resl,
+                             ori_resl,
+                             cart_bound=512.0,
+                             ori_nside=None):
+        spec = xbin_make_spec(cart_resl, ori_resl, cart_bound, ori_nside)
+        bcc6_indexer = numba_bcc_indexer(**spec)
+        assert bcc6_indexer
 
+        @jit
+        def func(xform, index):
+            face, f6 = numba_xform_to_f6(xform)
+            idx = bcc6_indexer(f6)
+            index[0] = np.bitwise_or(np.left_shift(face, 58), idx)
 
-def _kernel_xbin_indexer(cart_resl, ori_resl, cart_bound=512.0,
-                         ori_nside=None):
-    spec = xbin_make_spec(cart_resl, ori_resl, cart_bound, ori_nside)
-    bcc6_indexer = numba_bcc_indexer(**spec)
-    assert bcc6_indexer
-
-    @jit
-    def func(xform, index):
-        face, f6 = numba_xform_to_f6(xform)
-        idx = bcc6_indexer(f6)
-        index[0] = np.bitwise_or(np.left_shift(face, 58), idx)
-
-    return func
+        return func
 
 
 class XformBinner:
