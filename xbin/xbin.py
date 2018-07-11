@@ -6,8 +6,25 @@ import functools as ft
 import numpy as np
 from bcc import BCC, numba_bcc_indexer
 import homog as hg
-from homog.util import jit, guvec, float64
+from homog.util import jit, guvec, float64, int64
 import operator
+
+
+def gu_xbin_indexer(*args, **kw):
+    func = _kernel_xbin_indexer(*args, **kw)
+    return guvec([(float64[:, :], int64[:])], '(n,n)->()', func)
+
+
+def numba_xbin_indexer(*args, **kw):
+    func0 = _kernel_xbin_indexer(*args, **kw)
+
+    @jit
+    def func(value):
+        res = np.empty(1, dtype=np.int64)
+        func0(value, res)
+        return res[0]
+
+    return func
 
 
 def _kernel_xbin_indexer(cart_resl, ori_resl, cart_bound=512.0,
@@ -21,23 +38,6 @@ def _kernel_xbin_indexer(cart_resl, ori_resl, cart_bound=512.0,
         face, f6 = numba_xform_to_f6(xform)
         idx = bcc6_indexer(f6)
         index[0] = np.bitwise_or(np.left_shift(face, 58), idx)
-
-    return func
-
-
-def gu_xbin_indexer(*args, **kw):
-    func = _kernel_xbin_indexer(*args, **kw)
-    return guvec([(float64[:, :], float64[:])], '(n,n)->()', func)
-
-
-def numba_xbin_indexer(*args, **kw):
-    func0 = _kernel_xbin_indexer(*args, **kw)
-
-    @jit
-    def func(value):
-        res = np.empty(1, dtype=np.int64)
-        func0(value, res)
-        return res[0]
 
     return func
 

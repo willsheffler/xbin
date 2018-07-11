@@ -286,7 +286,7 @@ def test_numba_xbin():
 
     xbin_indexer = gu_xbin_indexer(cart_resl, ori_resl)
 
-    x = homog.rand_xform(10000)
+    x = homog.rand_xform(100000, cart_sd=100)
     idx0 = xbinner.get_bin_index(x)
     idx1 = xbin_indexer(x)
     assert np.all(idx0 == idx1)

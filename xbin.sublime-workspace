@@ -523,7 +523,7 @@
 			"file": "xbin/xbin.py",
 			"settings":
 			{
-				"buffer_size": 9364,
+				"buffer_size": 9369,
 				"encoding": "UTF-8",
 				"line_ending": "Unix"
 			}
@@ -557,7 +557,7 @@
 			"file": "xbin/tests/test_xbin.py",
 			"settings":
 			{
-				"buffer_size": 9785,
+				"buffer_size": 9799,
 				"encoding": "UTF-8",
 				"line_ending": "Unix"
 			}
@@ -1106,7 +1106,7 @@
 	],
 	"find":
 	{
-		"height": 48.0
+		"height": 52.0
 	},
 	"find_in_files":
 	{
@@ -1246,15 +1246,15 @@
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 9364,
+						"buffer_size": 9369,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								202,
-								202
+								386,
+								386
 							]
 						],
 						"settings":
@@ -1302,7 +1302,7 @@
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 63.0,
+						"translation.y": 163.0,
 						"zoom_level": 1.0
 					},
 					"stack_index": 2,
@@ -1365,7 +1365,7 @@
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 4356.0,
+						"translation.y": 4986.0,
 						"zoom_level": 1.0
 					},
 					"stack_index": 3,
@@ -1383,15 +1383,15 @@
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 9785,
+						"buffer_size": 9799,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								319,
-								319
+								9657,
+								9657
 							]
 						],
 						"settings":
@@ -1402,7 +1402,7 @@
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 0.0,
+						"translation.y": 6384.0,
 						"zoom_level": 1.0
 					},
 					"stack_index": 0,
@@ -1413,7 +1413,7 @@
 	],
 	"incremental_find":
 	{
-		"height": 78.0
+		"height": 49.0
 	},
 	"input":
 	{
@@ -1472,7 +1472,7 @@
 	"project": "xbin.sublime-project",
 	"replace":
 	{
-		"height": 88.0
+		"height": 96.0
 	},
 	"save_all_on_build": true,
 	"select_file":
